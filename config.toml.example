@@ -1,0 +1,10 @@
+# Configuration file for mailing server
+#
+
+db_name = ""
+db_user = ""
+db_pass = ""
+db_charset = "utf8"
+
+proxy_port = "80"
+manage_port = "5100"
