@@ -1,10 +1,11 @@
-# Configuration file for mailing server
+# Configuration file for reverse proxy server
 #
 
-db_name = ""
-db_user = ""
+db_name = "reverse_proxy"
+db_user = "root"
 db_pass = ""
 db_charset = "utf8"
 
+domain = "localhost.localdomain"
 proxy_port = "80"
 manage_port = "5100"
