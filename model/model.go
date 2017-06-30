@@ -5,6 +5,7 @@ import (
 	"time"
 	"crypto/sha256"
 	"fmt"
+	"strings"
 )
 
 type User struct {
@@ -23,12 +24,71 @@ type Website struct {
 	Host      string `gorm:"not null"`
 	Port      string `gorm:"not null"`
 	UserID    uint `gorm:"not null"`
+	Domains   []Domain
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
+type Domain struct {
+	ID        uint `gorm:"AUTO_INCREMENT"`
+	Name      string `gorm:type:varchar(100);not null"`
+	WebsiteID uint    `gorm:"not null"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func FindWebsiteByDomain(db *gorm.DB, host string) (result bool, website Website) {
+	if i := strings.Index(host, ":"); i != -1 {
+		host = host[:i]
+	}
+	domain_name := host
+	var domain Domain
+	var count uint
+	db.Model(&Domain{}).Where("name = ?", domain_name).Count(&count)
+	if count > 0 {
+		db.Where("name = ?", domain_name).First(&domain)
+		db.Model(&Website{}).Where("id = ?", domain.WebsiteID).Count(&count)
+		if count > 0 {
+			db.Where("id = ?", domain.WebsiteID).First(&website)
+			result = true
+			return
+		}
+	}
+	result = false
+	return
+}
+
+func AddDomain(db *gorm.DB, website_id uint, user_id uint, domain_name string) (result bool, domain Domain) {
+	var website Website
+	db.Where("id = ?", website_id).First(&website)
+	if website.UserID == user_id {
+		domain = Domain{
+			Name:      domain_name,
+			WebsiteID: website.ID,
+		}
+		db.Create(&domain)
+		result = true
+		return
+	}
+	result = false
+	return
+}
+
+func DelDomain(db *gorm.DB, domain_id uint, user_id uint) (result bool, domain Domain) {
+	db.Where("id = ?", domain_id).First(&domain)
+	var website Website
+	db.Where("id = ?", domain.WebsiteID).First(&website)
+	if website.UserID == user_id {
+		db.Delete(&domain)
+		result = true
+		return
+	}
+	result = false
+	return
+}
+
 func ListWebsites(db *gorm.DB) (websites []Website) {
-	db.Find(&websites)
+	db.Preload("Domains").Find(&websites)
 	return
 }
 
@@ -36,9 +96,9 @@ func ListUserWebsites(db *gorm.DB, user_id uint) (websites []Website) {
 	var user User
 	db.Where("id = ?", user_id).First(&user)
 	if user.Role == "admin" {
-		db.Find(&websites)
+		db.Preload("Domains").Find(&websites)
 	} else {
-		db.Where("user_id = ?", user_id).Find(&websites)
+		db.Preload("Domains").Where("user_id = ?", user_id).Find(&websites)
 	}
 	return
 }
@@ -67,6 +127,7 @@ func DelWebsite(db *gorm.DB, id uint, user_id uint) (result bool, website Websit
 	db.Where("id = ?", id).First(&website)
 	if website.UserID == user_id || user.Role == "admin" {
 		db.Delete(&website)
+		db.Where("website_id = ?", website.ID).Delete(Domain{})
 		result = true
 	} else {
 		result = false

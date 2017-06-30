@@ -34,7 +34,12 @@ func getWebsiteName(r *http.Request) string {
 }
 
 func serveHTTP(w http.ResponseWriter, r *http.Request) {
-	i := getWebsiteName(r)
+	var i string
+	if strings.Count(r.Host, config.GlobCfg.DOMAIN) > 0 {
+		i = getWebsiteName(r)
+	} else if ok, website := model.FindWebsiteByDomain(db, r.Host); ok {
+		i = website.Name
+	}
 	if _, ok := websites[i]; ok {
 		remote, err := url.Parse("http://" + websites[i].host + ":" + websites[i].port)
 		if err != nil {
@@ -43,12 +48,12 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		proxy := httputil.NewSingleHostReverseProxy(remote)
 		r.Host = websites[i].host + ":" + websites[i].port
 		r.URL.Host = websites[i].host + ":" + websites[i].port
-		r.Header.Set("Host", websites[i].host + ":" + websites[i].port)
+		r.Header.Set("Host", websites[i].host+":"+websites[i].port)
 		logHttp(r, i)
 		proxy.ServeHTTP(w, r)
 	} else {
 		//redirect to the default
-		http.Redirect(w, r, "http://www." + config.GlobCfg.DOMAIN, 302)
+		http.Redirect(w, r, "http://www."+config.GlobCfg.DOMAIN, 302)
 	}
 }
 
@@ -63,7 +68,7 @@ func StartServer() {
 	}
 	log.Warnf("Database connected")
 
-	db.AutoMigrate(&model.User{}, &model.Website{})
+	db.AutoMigrate(&model.User{}, &model.Website{}, &model.Domain{})
 
 	db_websites := model.ListWebsites(db)
 	if err != nil {

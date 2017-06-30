@@ -13,20 +13,54 @@
         <th>端口</th>
         <th>用户</th>
         <th>操作</th>
+        <th>域名</th>
     </tr>
     {{range .websites}}
     <tr>
-        <form method="post">
-            <td><a href="http://{{.Name}}.{{$.addr}}">{{.Name}}.{{$.addr}}</a></td>
-            <td>{{.Host}}</td>
-            <td>{{.Port}}</td>
-            <td>{{.UserID}}</td>
-            <td>
+        <td><a href="http://{{.Name}}.{{$.addr}}">{{.Name}}.{{$.addr}}</a></td>
+        <td>{{.Host}}</td>
+        <td>{{.Port}}</td>
+        <td>{{.UserID}}</td>
+        <td>
+            <form method="post">
                 <input type="hidden" name="id" value="{{.ID}}">
-                <input type="submit" value="删除">
-            </td>
-        </form>
+                <input type="submit" name="smt" value="删除网站">
+            </form>
+        </td>
+        <td>
+            <table>
+                {{range .Domains}}
+                <tr>
+                    <td>{{.Name}}</td>
+                    <td>
+                        <form method="post">
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <input type="submit" name="smt" value="删除域名">
+                        </form>
+                    </td>
+                </tr>
+                {{end}}
+                <tr>
+                    <form method="post">
+                        <td>
+                            <input type="text" name="domain">
+                        </td>
+                        <td>
+                            <input type="hidden" name="id" value="{{.ID}}">
+                            <input type="submit" name="smt" value="添加域名">
+
+                        </td>
+                    </form>
+                </tr>
+            </table>
+        </td>
     </tr>
     {{end}}
 </table>
+</p>
+
+<p>
+    你可以使用系统给你分配的二级域名访问你的网站。
+    <br>
+    要设置自定义域名，在表格右侧的域名一栏添加你要设置的域名，再将你的域名设置为 CNAME 或 ALIAS 方式解析到这个域名。
 </p>

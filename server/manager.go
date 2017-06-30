@@ -129,10 +129,22 @@ func list(w http.ResponseWriter, r *http.Request) {
 			t.Execute(w, m)
 		} else if r.Method == "POST" {
 			r.ParseForm()
-			id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 32)
-			if ok, website := model.DelWebsite(db, uint(id) , user_id); ok {
-				log.Warnf("Handling request of deleting reverse proxy [" + website.Name + "] by user " + fmt.Sprint(user_id))
-				delWebsite(website.Name)
+			if r.Form.Get("smt") == "删除网站" {
+				id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 32)
+				if ok, website := model.DelWebsite(db, uint(id), user_id); ok {
+					log.Warnf("Handling request of deleting reverse proxy [" + website.Name + "] by user " + fmt.Sprint(user_id))
+					delWebsite(website.Name)
+				}
+			} else if r.Form.Get("smt") == "删除域名" {
+				id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 32)
+				if ok, domain := model.DelDomain(db, uint(id), user_id); ok {
+					log.Warnf("Handling request of deleting domain [" + domain.Name + "] by user " + fmt.Sprint(user_id))
+				}
+			} else if r.Form.Get("smt") == "添加域名" {
+				id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 32)
+				if ok, domain := model.AddDomain(db, uint(id), user_id, r.Form.Get("domain")); ok {
+					log.Warnf("Handling request of adding domain [" + domain.Name + "] by user " + fmt.Sprint(user_id))
+				}
 			}
 			http.Redirect(w, r, "/list", 302)
 		}
