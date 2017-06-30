@@ -12,6 +12,7 @@ type User struct {
 	Nickname  string
 	Email     string `gorm:"type:varchar(100);not null;unique"`
 	Password  string `gorm:"not null"`
+	Role      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -32,16 +33,22 @@ func ListWebsites(db *gorm.DB) (websites []Website) {
 }
 
 func ListUserWebsites(db *gorm.DB, user_id uint) (websites []Website) {
-	db.Where("user_id = ?", user_id).Find(&websites)
+	var user User
+	db.Where("id = ?", user_id).First(&user)
+	if user.Role == "admin" {
+		db.Find(&websites)
+	} else {
+		db.Where("user_id = ?", user_id).Find(&websites)
+	}
 	return
 }
 
-func AddWebsite(db *gorm.DB, name string, host string, port string, user_id uint) (website Website)  {
+func AddWebsite(db *gorm.DB, name string, host string, port string, user_id uint) (website Website) {
 	db.LogMode(true)
 	website = Website{
-		Name: name,
-		Host: host,
-		Port: port,
+		Name:   name,
+		Host:   host,
+		Port:   port,
 		UserID: user_id,
 	}
 	db.Debug().Create(&website)
@@ -49,8 +56,10 @@ func AddWebsite(db *gorm.DB, name string, host string, port string, user_id uint
 }
 
 func DelWebsite(db *gorm.DB, id uint, user_id uint) (result bool, website Website) {
+	var user User
+	db.Where("id = ?", user_id).First(&user)
 	db.Where("id = ?", id).First(&website)
-	if website.UserID == user_id {
+	if website.UserID == user_id || user.Role == "admin" {
 		db.Delete(&website)
 		result = true
 	} else {
@@ -66,7 +75,7 @@ func AddUser(db *gorm.DB, nickname string, email string, password string) (user 
 	dest := fmt.Sprintf("%x", enc.Sum(nil))
 	user = User{
 		Nickname: nickname,
-		Email: email,
+		Email:    email,
 		Password: dest,
 	}
 	db.Debug().Create(&user)

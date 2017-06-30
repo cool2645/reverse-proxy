@@ -3,12 +3,13 @@ package server
 import (
 	"net/http"
 	log "github.com/Sirupsen/logrus"
+	"strconv"
+	"fmt"
 	"text/template"
 	"github.com/astaxie/beego/session"
 
 	"github.com/2645Corp/reverse-proxy/config"
 	"github.com/2645Corp/reverse-proxy/model"
-	"strconv"
 )
 
 var globalSessions *session.Manager
@@ -31,7 +32,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 			t.Execute(w, nickname)
 		} else if r.Method == "POST" {
 			r.ParseForm()
-			log.Infof("Handling request of adding reverse proxy [" + r.Form.Get("name") + "] for port " + r.Form.Get("port") + " of " + r.Form.Get("host") +  " by user " + string(user_id))
+			log.Infof("Handling request of adding reverse proxy [" + r.Form.Get("name") + "] for port " + r.Form.Get("port") + " of " + r.Form.Get("host") +  " by user " + fmt.Sprint(user_id))
 			model.AddWebsite(db, r.Form.Get("name"), r.Form.Get("host"), r.Form.Get("port"), uint(user_id))
 			addWebsite(r.Form.Get("name"), handle{host:r.Form.Get("host"), port:r.Form.Get("port")})
 			http.Redirect(w, r, "/list", 302)
@@ -101,7 +102,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
 			id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 32)
 			if ok, website := model.DelWebsite(db, uint(id) , user_id); ok {
-				log.Infof("Handling request of deleting reverse proxy [" + website.Name + "] by user " + string(user_id))
+				log.Infof("Handling request of deleting reverse proxy [" + website.Name + "] by user " + fmt.Sprint(user_id))
 				delWebsite(website.Name)
 			}
 			http.Redirect(w, r, "/list", 302)
