@@ -13,5 +13,5 @@ type Config struct {
 }
 
 func ParseDSN(config Config) string {
-	return config.DB_USER + ":" + config.DB_PASS + "@/" + config.DB_NAME + "?charset=" + config.DB_CHARSET
+	return config.DB_USER + ":" + config.DB_PASS + "@/" + config.DB_NAME + "?charset=" + config.DB_CHARSET + "&parseTime=true"
 }

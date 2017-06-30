@@ -21,6 +21,7 @@ type handle struct {
 
 var websites map[string]handle
 var mu = sync.Mutex{}
+var db *gorm.DB
 
 func getWebsiteName(r *http.Request) string {
 	host := r.Host
@@ -49,27 +50,30 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 func StartServer() {
 	globCfg := config.GlobCfg
 
-	db, err := gorm.Open("mysql", config.ParseDSN(globCfg))
+	var err error
+	log.Infof("Connecting to database")
+	db, err = gorm.Open("mysql", config.ParseDSN(globCfg))
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Infof("Database connected")
-	defer db.Close()
 
 	db.AutoMigrate(&model.User{}, &model.Website{})
 
-	db_websites, err := model.ListWebsites(db)
+	db_websites := model.ListWebsites(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 	websites = make(map[string]handle)
 	for _, v := range db_websites {
 		websites[v.Name] = handle{host: v.Host, port: v.Port}
+		log.Infof("Loaded reverse proxy [" + v.Name + "] for port " + v.Port + " of " + v.Host)
 	}
 
 	go func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", serveHTTP)
+		log.Infof("Starting reverse proxy on port " + globCfg.PROXY_PORT)
 		err = http.ListenAndServe(":"+globCfg.PROXY_PORT, mux)
 		if err != nil {
 			log.Fatalln("ListenAndServe: ", err)
@@ -77,14 +81,16 @@ func StartServer() {
 	}()
 }
 
-func AddWebsite(name string, handle handle) {
+func addWebsite(name string, handle handle) {
 	mu.Lock()
 	websites[name] = handle
+	log.Infof("Added reverse proxy [" + name + "] for port " + handle.port + " of " + handle.host)
 	mu.Unlock()
 }
 
-func DelWebsite(name string) {
+func delWebsite(name string) {
 	mu.Lock()
 	delete(websites, name)
+	log.Infof("Terminated reverse proxy [" + name + "]")
 	mu.Unlock()
 }

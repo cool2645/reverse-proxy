@@ -1,23 +1,25 @@
 <p>
-    欢迎，
+    欢迎，{{.}}
+    <a href="/list">管理</a>
+    <a href="/auth">登出</a>
 </p>
 <p>
 <table>
-    <form>
+    <form method="post">
         <tr>
             <td><strong>新建反向代理服务</strong></td>
         </tr>
         <tr>
             <td>域名</td>
-            <td><input type="text" name="email"></td>
+            <td><input type="text" name="name"></td>
         </tr>
         <tr>
             <td>主机地址</td>
-            <td><input type="text" name="password"></td>
+            <td><input type="text" name="host"></td>
         </tr>
         <tr>
             <td>端口</td>
-            <td><input type="text" name="password"></td>
+            <td><input type="text" name="port"></td>
         </tr>
         <tr>
             <td><input type="submit" value="创建"></td>
