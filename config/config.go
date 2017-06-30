@@ -8,6 +8,7 @@ type Config struct {
 	DB_PASS    string        `toml:"db_pass"`
 	DB_CHARSET string        `toml:"db_charset"`
 
+	DOMAIN      string        `toml:"domain"`
 	PROXY_PORT  string        `toml:"proxy_port"`
 	MANAGE_PORT string        `toml:"manage_port"`
 }

@@ -19,7 +19,12 @@ func init() {
 	go globalSessions.GC()
 }
 
+func logHttp(r *http.Request) {
+	log.Infof("Request From %s, Request URI %s, Header %v", r.Header.Get("Origin"), r.RequestURI, r.Header)
+}
+
 func index(w http.ResponseWriter, r *http.Request) {
+	logHttp(r)
 	sess, _ := globalSessions.SessionStart(w, r)
 	defer sess.SessionRelease(w)
 	if user_id, ok := sess.Get("user_id").(uint); ok {
@@ -28,13 +33,24 @@ func index(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			nickname := sess.Get("nickname")
-			t.Execute(w, nickname)
+			m := make(map[string]string)
+			m["nickname"] = sess.Get("nickname").(string)
+			t.Execute(w, m)
 		} else if r.Method == "POST" {
 			r.ParseForm()
 			log.Infof("Handling request of adding reverse proxy [" + r.Form.Get("name") + "] for port " + r.Form.Get("port") + " of " + r.Form.Get("host") +  " by user " + fmt.Sprint(user_id))
-			model.AddWebsite(db, r.Form.Get("name"), r.Form.Get("host"), r.Form.Get("port"), uint(user_id))
-			addWebsite(r.Form.Get("name"), handle{host:r.Form.Get("host"), port:r.Form.Get("port")})
+			if ok, _ = model.AddWebsite(db, r.Form.Get("name"), r.Form.Get("host"), r.Form.Get("port"), uint(user_id)); ok {
+				addWebsite(r.Form.Get("name"), handle{host:r.Form.Get("host"), port:r.Form.Get("port")})
+			} else {
+				t, err := template.ParseFiles("tmpl/index.html")
+				if err != nil {
+					log.Fatal(err)
+				}
+				m := make(map[string]string)
+				m["nickname"] = sess.Get("nickname").(string)
+				m["error"] = "此域名已存在"
+				t.Execute(w, m)
+			}
 			http.Redirect(w, r, "/list", 302)
 		}
 	} else {
@@ -43,6 +59,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func auth(w http.ResponseWriter, r *http.Request) {
+	logHttp(r)
 	sess, _ := globalSessions.SessionStart(w, r)
 	defer sess.SessionRelease(w)
 	if user_id := sess.Get("user_id"); user_id != nil {
@@ -77,17 +94,26 @@ func auth(w http.ResponseWriter, r *http.Request) {
 				}
 				t.Execute(w, "两次输入的密码不一致！")
 			}
-			model.AddUser(db, r.Form.Get("nickname"), r.Form.Get("email"), r.Form.Get("password"))
-			t, err := template.ParseFiles("tmpl/auth.html")
-			if err != nil {
-				log.Fatal(err)
+			if ok, _ := model.AddUser(db, r.Form.Get("nickname"), r.Form.Get("email"), r.Form.Get("password")); ok {
+				t, err := template.ParseFiles("tmpl/auth.html")
+				if err != nil {
+					log.Fatal(err)
+				}
+				t.Execute(w, "注册成功！")
+			} else {
+				t, err := template.ParseFiles("tmpl/auth.html")
+				if err != nil {
+					log.Fatal(err)
+				}
+				t.Execute(w, "该邮箱已被注册！")
 			}
-			t.Execute(w, "注册成功！")
+
 		}
 	}
 }
 
 func list(w http.ResponseWriter, r *http.Request) {
+	logHttp(r)
 	sess, _ := globalSessions.SessionStart(w, r)
 	defer sess.SessionRelease(w)
 	if user_id, ok := sess.Get("user_id").(uint); ok {
@@ -97,7 +123,10 @@ func list(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			t.Execute(w, db_websites)
+			m := make(map[string]interface{})
+			m["websites"] = db_websites
+			m["addr"] = config.GlobCfg.DOMAIN
+			t.Execute(w, m)
 		} else if r.Method == "POST" {
 			r.ParseForm()
 			id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 32)

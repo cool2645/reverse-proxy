@@ -14,18 +14,18 @@
         <th>用户</th>
         <th>操作</th>
     </tr>
-    {{range .}}
+    {{range .websites}}
     <tr>
-        <td>{{.Name}}</td>
-        <td>{{.Host}}</td>
-        <td>{{.Port}}</td>
-        <td>{{.UserID}}</td>
-        <td>
-            <form method="post">
+        <form method="post">
+            <td><a href="http://{{.Name}}.{{$.addr}}">{{.Name}}.{{$.addr}}</a></td>
+            <td>{{.Host}}</td>
+            <td>{{.Port}}</td>
+            <td>{{.UserID}}</td>
+            <td>
                 <input type="hidden" name="id" value="{{.ID}}">
                 <input type="submit" value="删除">
-            </form>
-        </td>
+            </td>
+        </form>
     </tr>
     {{end}}
 </table>

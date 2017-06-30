@@ -43,15 +43,21 @@ func ListUserWebsites(db *gorm.DB, user_id uint) (websites []Website) {
 	return
 }
 
-func AddWebsite(db *gorm.DB, name string, host string, port string, user_id uint) (website Website) {
-	db.LogMode(true)
-	website = Website{
-		Name:   name,
-		Host:   host,
-		Port:   port,
-		UserID: user_id,
+func AddWebsite(db *gorm.DB, name string, host string, port string, user_id uint) (result bool, website Website) {
+	var count uint
+	db.Model(&Website{}).Where("name = ?", name).Count(&count)
+	if count > 0 {
+		result = false
+	} else {
+		website = Website{
+			Name:   name,
+			Host:   host,
+			Port:   port,
+			UserID: user_id,
+		}
+		db.Create(&website)
+		result = true
 	}
-	db.Debug().Create(&website)
 	return
 }
 
@@ -68,17 +74,23 @@ func DelWebsite(db *gorm.DB, id uint, user_id uint) (result bool, website Websit
 	return
 }
 
-func AddUser(db *gorm.DB, nickname string, email string, password string) (user User) {
-	db.LogMode(true)
-	enc := sha256.New()
-	enc.Write([]byte(password))
-	dest := fmt.Sprintf("%x", enc.Sum(nil))
-	user = User{
-		Nickname: nickname,
-		Email:    email,
-		Password: dest,
+func AddUser(db *gorm.DB, nickname string, email string, password string) (result bool, user User) {
+	var count uint
+	db.Model(&User{}).Where("email = ?", email).Count(&count)
+	if count > 0 {
+		result = false
+	} else {
+		enc := sha256.New()
+		enc.Write([]byte(password))
+		dest := fmt.Sprintf("%x", enc.Sum(nil))
+		user = User{
+			Nickname: nickname,
+			Email:    email,
+			Password: dest,
+		}
+		db.Create(&user)
+		result = true
 	}
-	db.Debug().Create(&user)
 	return
 }
 
