@@ -43,7 +43,8 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		proxy := httputil.NewSingleHostReverseProxy(remote)
 		proxy.ServeHTTP(w, r)
 	} else {
-		http.Error(w, "403 Forbidden", 403)
+		//redirect to the default
+		http.Redirect(w, r, "http://www." + config.GlobCfg.DOMAIN, 302)
 	}
 }
 
