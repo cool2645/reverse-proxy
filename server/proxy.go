@@ -41,6 +41,9 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		proxy := httputil.NewSingleHostReverseProxy(remote)
+		r.Host = websites[i].host + ":" + websites[i].port
+		r.URL.Host = websites[i].host + ":" + websites[i].port
+		r.Header.Set("Host", websites[i].host + ":" + websites[i].port)
 		proxy.ServeHTTP(w, r)
 	} else {
 		//redirect to the default
