@@ -19,12 +19,12 @@ func init() {
 	go globalSessions.GC()
 }
 
-func logHttp(r *http.Request) {
-	log.Infof("Request From %s, Request URI %s, Header %v", r.Header.Get("Origin"), r.RequestURI, r.Header)
+func logHttp(r *http.Request, website string) {
+	log.Infof("[%s] Request From %s, Request URI %s, Header %+v\n", website, r.Header.Get("Origin"), r.RequestURI, r.Header)
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	logHttp(r)
+	logHttp(r, "[manager]")
 	sess, _ := globalSessions.SessionStart(w, r)
 	defer sess.SessionRelease(w)
 	if user_id, ok := sess.Get("user_id").(uint); ok {
@@ -38,7 +38,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 			t.Execute(w, m)
 		} else if r.Method == "POST" {
 			r.ParseForm()
-			log.Infof("Handling request of adding reverse proxy [" + r.Form.Get("name") + "] for port " + r.Form.Get("port") + " of " + r.Form.Get("host") +  " by user " + fmt.Sprint(user_id))
+			log.Warnf("Handling request of adding reverse proxy [" + r.Form.Get("name") + "] for port " + r.Form.Get("port") + " of " + r.Form.Get("host") +  " by user " + fmt.Sprint(user_id))
 			if ok, _ = model.AddWebsite(db, r.Form.Get("name"), r.Form.Get("host"), r.Form.Get("port"), uint(user_id)); ok {
 				addWebsite(r.Form.Get("name"), handle{host:r.Form.Get("host"), port:r.Form.Get("port")})
 			} else {
@@ -59,7 +59,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func auth(w http.ResponseWriter, r *http.Request) {
-	logHttp(r)
+	logHttp(r, "[manager]")
 	sess, _ := globalSessions.SessionStart(w, r)
 	defer sess.SessionRelease(w)
 	if user_id := sess.Get("user_id"); user_id != nil {
@@ -113,7 +113,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 }
 
 func list(w http.ResponseWriter, r *http.Request) {
-	logHttp(r)
+	logHttp(r, "[manager]")
 	sess, _ := globalSessions.SessionStart(w, r)
 	defer sess.SessionRelease(w)
 	if user_id, ok := sess.Get("user_id").(uint); ok {
@@ -131,7 +131,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
 			id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 32)
 			if ok, website := model.DelWebsite(db, uint(id) , user_id); ok {
-				log.Infof("Handling request of deleting reverse proxy [" + website.Name + "] by user " + fmt.Sprint(user_id))
+				log.Warnf("Handling request of deleting reverse proxy [" + website.Name + "] by user " + fmt.Sprint(user_id))
 				delWebsite(website.Name)
 			}
 			http.Redirect(w, r, "/list", 302)
@@ -149,7 +149,7 @@ func StartManager() {
 		mux.HandleFunc("/", index)
 		mux.HandleFunc("/auth", auth)
 		mux.HandleFunc("/list", list)
-		log.Infof("Starting manager on port " + globCfg.MANAGE_PORT)
+		log.Warnf("Starting manager on port " + globCfg.MANAGE_PORT)
 		err := http.ListenAndServe(":"+globCfg.MANAGE_PORT, mux)
 		if err != nil {
 			log.Fatalln("ListenAndServe: ", err)

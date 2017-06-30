@@ -44,6 +44,7 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		r.Host = websites[i].host + ":" + websites[i].port
 		r.URL.Host = websites[i].host + ":" + websites[i].port
 		r.Header.Set("Host", websites[i].host + ":" + websites[i].port)
+		logHttp(r, i)
 		proxy.ServeHTTP(w, r)
 	} else {
 		//redirect to the default
@@ -55,12 +56,12 @@ func StartServer() {
 	globCfg := config.GlobCfg
 
 	var err error
-	log.Infof("Connecting to database")
+	log.Warnf("Connecting to database")
 	db, err = gorm.Open("mysql", config.ParseDSN(globCfg))
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Infof("Database connected")
+	log.Warnf("Database connected")
 
 	db.AutoMigrate(&model.User{}, &model.Website{})
 
@@ -71,13 +72,13 @@ func StartServer() {
 	websites = make(map[string]handle)
 	for _, v := range db_websites {
 		websites[v.Name] = handle{host: v.Host, port: v.Port}
-		log.Infof("Loaded reverse proxy [" + v.Name + "] for port " + v.Port + " of " + v.Host)
+		log.Warnf("Loaded reverse proxy [" + v.Name + "] for port " + v.Port + " of " + v.Host)
 	}
 
 	go func() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", serveHTTP)
-		log.Infof("Starting reverse proxy on port " + globCfg.PROXY_PORT)
+		log.Warnf("Starting reverse proxy on port " + globCfg.PROXY_PORT)
 		err = http.ListenAndServe(":"+globCfg.PROXY_PORT, mux)
 		if err != nil {
 			log.Fatalln("ListenAndServe: ", err)
@@ -88,13 +89,13 @@ func StartServer() {
 func addWebsite(name string, handle handle) {
 	mu.Lock()
 	websites[name] = handle
-	log.Infof("Added reverse proxy [" + name + "] for port " + handle.port + " of " + handle.host)
+	log.Warnf("Added reverse proxy [" + name + "] for port " + handle.port + " of " + handle.host)
 	mu.Unlock()
 }
 
 func delWebsite(name string) {
 	mu.Lock()
 	delete(websites, name)
-	log.Infof("Terminated reverse proxy [" + name + "]")
+	log.Warnf("Terminated reverse proxy [" + name + "]")
 	mu.Unlock()
 }

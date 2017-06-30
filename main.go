@@ -11,17 +11,17 @@ import (
 
 func main() {
 
-	log.Infof("Initializing program")
-	log.Infof("Loading config file")
+	log.Warnf("Initializing program")
+	log.Warnf("Loading config file")
 	_, err := toml.DecodeFile("config.toml", &config.GlobCfg)
 	if err != nil {
 		panic(err)
 	}
 
-	log.Infof("Starting reverse proxy server")
+	log.Warnf("Starting reverse proxy server")
 	server.StartServer()
 
-	log.Infof("Starting manage server")
+	log.Warnf("Starting manage server")
 	server.StartManager()
 
 	for {
