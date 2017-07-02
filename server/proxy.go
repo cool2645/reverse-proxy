@@ -23,14 +23,27 @@ var websites map[string]handle
 var mu = sync.Mutex{}
 var db *gorm.DB
 
-func getWebsiteName(r *http.Request) string {
-	host := r.Host
-	if i := strings.Index(host, "."); i != -1 {
-		host = host[:i]
-	} else if i := strings.Index(host, ":"); i != -1 {
+func getWebsiteName(r *http.Request) (host string) {
+	host = r.Host
+	if i := strings.Index(host, ":"); i != -1 {
 		host = host[:i]
 	}
-	return host
+	if host == config.GlobCfg.DOMAIN {
+		host = "@"
+		return
+	}
+	if i := strings.Index(host, "."); i != -1 {
+		host = host[:i]
+	}
+	return
+}
+
+func httpDefault(w http.ResponseWriter, r *http.Request)  {
+	if config.GlobCfg.ENABLE_DEFAULT_SITE {
+		http.Redirect(w, r, config.GlobCfg.DEFAULT_SITE, 302)
+	} else {
+		http.Error(w, "403 Forbidden.", 403)
+	}
 }
 
 func serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -52,8 +65,7 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		logHttp(r, i)
 		proxy.ServeHTTP(w, r)
 	} else {
-		//redirect to the default
-		http.Redirect(w, r, "http://www."+config.GlobCfg.DOMAIN, 302)
+		httpDefault(w, r)
 	}
 }
 

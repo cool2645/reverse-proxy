@@ -1,11 +1,24 @@
 # Configuration file for reverse proxy server
 #
 
+# The database connection info
+# Use mysql as db driver
 db_name = "reverse_proxy"
 db_user = "root"
 db_pass = ""
 db_charset = "utf8"
 
+# The domain of this proxy
+# Second-level domains of this domain will be assigned to users to access their site
 domain = "localhost.localdomain"
+
+# The port this proxy serves at, usually 80
 proxy_port = "80"
+
+# The port of the manager
 manage_port = "5100"
+
+# By enabling default site, we will redirect a request to the default site if there's no website matches
+# You can set up a reverse proxy "@" or "www" for the manager to redirect request to the manager website
+enable_default_site = true
+default_site = "http://localhost.localdomain"
